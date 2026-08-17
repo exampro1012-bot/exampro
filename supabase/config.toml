@@ -1,0 +1,55 @@
+project_id = "lrktftnalrtvaazaauhj"
+
+[functions.drive-health]
+verify_jwt = true
+
+[functions.drive-init]
+verify_jwt = true
+
+[functions.drive-upload]
+verify_jwt = true
+
+[functions.drive-download]
+verify_jwt = true
+
+[functions.drive-metadata]
+verify_jwt = true
+
+[functions.drive-delete]
+verify_jwt = true
+
+[functions.drive-list]
+verify_jwt = true
+
+[functions.drive-audit]
+verify_jwt = true
+
+[functions.drive-track]
+verify_jwt = true
+
+[functions.drive-save-paper]
+verify_jwt = true
+
+[functions.drive-save-dpp]
+verify_jwt = true
+
+[functions.generate-paper]
+verify_jwt = true
+
+[functions.generate-report]
+verify_jwt = true
+
+[functions.finalize-exam]
+verify_jwt = true
+
+[functions.send-notification]
+verify_jwt = true
+
+[functions.admin-import]
+verify_jwt = true
+
+[functions.admin-import-source]
+verify_jwt = true
+[functions.google-drive-oauth]
+verify_jwt = false
+

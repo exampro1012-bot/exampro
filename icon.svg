@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="ExamPro">
+  <rect width="512" height="512" rx="96" fill="#1f3a5f"/>
+  <rect x="36" y="36" width="440" height="440" rx="72" fill="none" stroke="#4d7ab5" stroke-width="10" opacity="0.55"/>
+  <text x="256" y="352" font-family="Arial, Helvetica, sans-serif" font-size="300" font-weight="800" fill="#ffffff" text-anchor="middle">E</text>
+  <circle cx="392" cy="128" r="34" fill="#22a06b"/>
+  <text x="392" y="142" font-family="Arial, Helvetica, sans-serif" font-size="40" font-weight="700" fill="#ffffff" text-anchor="middle">✓</text>
+</svg>

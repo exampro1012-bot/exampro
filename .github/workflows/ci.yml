@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+env:
+  PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/pw-browsers
+
+jobs:
+  offline-tests:
+    name: Offline suite (structural + mock UI)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Run offline suites
+        # "storage settings (Google Drive)" needs live credentials — it runs in
+        # the live e2e job; everything else here is credential-free structural
+        # coverage (the zero-skip gate applies to the live job's full run).
+        run: npx playwright test tests/supabase-migration.spec.ts tests/exampro-ui.spec.ts tests/exampro-negative.spec.ts --grep-invert "storage settings"
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-offline-report
+          path: playwright-report/
+          retention-days: 7
+
+  e2e:
+    name: Live E2E full suite (zero-skip enforced)
+    runs-on: ubuntu-latest
+    # The full live regression (every spec, both projects) runs when repo
+    # secrets are configured. drive-integration.spec.ts additionally requires
+    # the Google Drive OAuth connection for the QA tenant (provisioned once via
+    # Settings → Storage, or E2E_GOOGLE_REFRESH_TOKEN through the bootstrap).
+    if: ${{ secrets.SUPABASE_URL != '' && secrets.SUPABASE_ANON_KEY != '' && secrets.SUPABASE_TEST_EMAIL != '' && secrets.SUPABASE_TEST_PASSWORD != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Bootstrap (verify env/backend/RPC/Drive/dataset)
+        run: node scripts/e2e-bootstrap.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_TEST_EMAIL: ${{ secrets.SUPABASE_TEST_EMAIL }}
+          SUPABASE_TEST_PASSWORD: ${{ secrets.SUPABASE_TEST_PASSWORD }}
+          E2E_GOOGLE_REFRESH_TOKEN: ${{ secrets.E2E_GOOGLE_REFRESH_TOKEN }}
+      - name: Run the full live E2E suite
+        run: npx playwright test --reporter=list,json
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_TEST_EMAIL: ${{ secrets.SUPABASE_TEST_EMAIL }}
+          SUPABASE_TEST_PASSWORD: ${{ secrets.SUPABASE_TEST_PASSWORD }}
+          PLAYWRIGHT_JSON_OUTPUT_NAME: test-results/results.json
+      - name: Zero-skip gate (0 failed, 0 skipped)
+        run: node scripts/enforce-zero-skip.mjs test-results/results.json
+      - name: Upload Playwright report + traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-live-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7

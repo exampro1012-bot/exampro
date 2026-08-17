@@ -1,0 +1,48 @@
+{
+  "name": "exampro",
+  "version": "2.0.0",
+  "description": "Free-first, Supabase-powered JEE/NEET/CET exam preparation platform: question bank, mock tests, paper generator, DPP, OMR, analytics. Backend = Supabase (PostgreSQL, Auth, Storage, Realtime, Edge Functions).",
+  "main": "index.html",
+  "scripts": {
+    "dev": "python -m http.server 3000",
+    "serve": "python -m http.server 3000",
+    "supabase:test": "playwright test tests/supabase-migration.spec.ts",
+    "test:structural": "playwright test tests/supabase-migration.spec.ts",
+    "test:ui": "playwright test tests/exampro-ui.spec.ts",
+    "test:all": "playwright test",
+    "e2e": "playwright test tests/supabase-e2e.spec.ts",
+    "e2e:bootstrap": "node scripts/e2e-bootstrap.mjs",
+    "e2e:enforce": "node scripts/enforce-zero-skip.mjs",
+    "test:e2e": "playwright test tests/supabase-migration.spec.ts tests/supabase-e2e.spec.ts tests/drive-e2e.spec.ts",
+    "db:test": "powershell -ExecutionPolicy Bypass -File scripts/db-test.ps1",
+    "import:questions": "node supabase/import-dataset.mjs",
+    "playwright:install": "playwright install chromium",
+    "playwright:report": "playwright show-report"
+  },
+  "keywords": [
+    "education",
+    "exam",
+    "jee",
+    "neet",
+    "cet",
+    "mock-test",
+    "question-bank",
+    "paper-generator",
+    "dpp",
+    "omr",
+    "supabase",
+    "postgresql",
+    "pwa"
+  ],
+  "author": "ExamPro",
+  "license": "MIT",
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "@supabase/supabase-js": "^2.45.0",
+    "pg": "^8.23.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "type": "module"
+}
