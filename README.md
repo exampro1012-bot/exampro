@@ -1,3 +1,3 @@
 ﻿# ExamPro
 
-Initial repository setup.
+Initial repository for ExamPro project.

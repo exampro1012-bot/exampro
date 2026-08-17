@@ -1,28 +1,5 @@
-node_modules/
-playwright-report/
-test-results/
-results.txt
+﻿# .gitignore
 *.log
-.env
-.env.local
-.env.*.local
 .DS_Store
-Thumbs.db
-build/
+node_modules/
 dist/
-.cache/
-tmp/
-temp/
-.idea/
-.vscode/
-*.swp
-*.swo
-*~
-.~lock.*
-
-# local-only test credentials (anon key for live E2E runs)
-.auth-key
-
-.test-creds.env
-scripts/rotate-admin-password.mjs
-
