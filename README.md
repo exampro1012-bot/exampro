@@ -1,3 +1,3 @@
 ﻿# ExamPro
 
-Initial repository for ExamPro project.
+Repository for ExamPro exam preparation platform.
