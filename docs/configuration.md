@@ -9,6 +9,7 @@ Set before the app bundle runs (e.g. in `index.html`):
 
 | Key | Values | Meaning |
 |-----|--------|---------|
+| `SITE_URL` | URL | Production canonical/site origin (`https://exampropaper.vercel.app`) |
 | `QUESTION_STORAGE_PROVIDER` | `supabase` | Storage provider (always Supabase) |
 | `SUPABASE_URL` | URL | Supabase project URL |
 | `SUPABASE_PUBLISHABLE_KEY` | string | Supabase anon/publishable key (safe for browser) |
@@ -18,6 +19,7 @@ Example:
 ```html
 <script>
   window.EXAMPRO_CONFIG = {
+    SITE_URL: 'https://exampropaper.vercel.app',
     SUPABASE_URL: 'https://xxxx.supabase.co',
     SUPABASE_PUBLISHABLE_KEY: 'eyJ...',
   };

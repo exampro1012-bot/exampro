@@ -1,6 +1,7 @@
 {
   "name": "exampro",
   "version": "2.0.0",
+  "homepage": "https://exampropaper.vercel.app",
   "description": "Free-first, Supabase-powered JEE/NEET/CET exam preparation platform: question bank, mock tests, paper generator, DPP, OMR, analytics. Backend = Supabase (PostgreSQL, Auth, Storage, Realtime, Edge Functions).",
   "main": "index.html",
   "scripts": {
