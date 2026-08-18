@@ -4,8 +4,8 @@
 
 **Production URL:** https://exampropaper.vercel.app/  
 **Testing Date:** 2026-08-18  
-**Git Commit:** 927c7a1 — chore: set production URL to https://exampropaper.vercel.app in configs and docs  
-**Vercel Deployment:** dpl_FFV5YtUfNQeLYeEXAoUamFBN67E1 (READY / PROMOTED)  
+**Git Commit:** 9f2cb69 — fix: force npm install in Vercel to resolve pnpm lockfile error  
+**Vercel Deployment:** dpl_8PNYnZ8fX4vBQmMiWwQfoW96tUmk (READY / PROMOTED)  
 **Supabase Project:** lrktftnalrtvaazaauhj  
 
 ---
@@ -141,6 +141,7 @@ Without one of the above, the following cannot be completed:
 | `exampro-ui.spec.ts` (82 tests) | **82 PASSED** |
 | `exampro-negative.spec.ts` (42 tests) | **42 PASSED** |
 | `supabase-migration.spec.ts` (14 tests) | **12 PASSED** / 2 SKIPPED (Google Drive test requires E2E bootstrap) |
+| `auth-rbac-live.spec.ts` (10 roles) | **BLOCKED** — `.env.local` missing (Supabase admin credentials required) |
 
 ### Verified Workflows (Production)
 - ✅ Site load, HTTPS, JavaScript, CSS, assets

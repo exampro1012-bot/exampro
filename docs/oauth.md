@@ -48,6 +48,13 @@ there too, add that origin's callback handling via Supabase's
 - Site URL: `https://exampropaper.vercel.app` (or your deployed origin)
 - Redirect URLs: add `http://localhost:3000/**` and `https://exampropaper.vercel.app/**`.
 
+> **Common issue — production redirects to `localhost:3000`:**
+> If you updated secrets but auth still redirects to `http://localhost:3000`,
+> the **Site URL** or **Redirect URLs** in the Supabase dashboard are still
+> pointing at localhost. Go to **Supabase Dashboard → Authentication → URL
+> Configuration** and update both values. Secrets and environment variables do
+> not affect these settings.
+
 ## Troubleshooting
 
 - `redirect_uri_mismatch`: the Google credential's authorized redirect URI

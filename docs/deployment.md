@@ -21,6 +21,17 @@ ExamPro is a static frontend + Supabase backend. No application server to run.
 - Set **Site URL** and **Redirect URLs** to your production origin
   (`https://exampropaper.vercel.app/**`) and `http://localhost:3000/**` for local dev.
 
+> **Common issue — redirects to `localhost:3000` in production:**
+> If auth flows (email confirmation, password reset, OAuth callback) redirect to
+> `http://localhost:3000/#` after you update secrets, the **Site URL** or
+> **Redirect URLs** in the Supabase dashboard are still set to localhost.
+> Go to **Supabase Dashboard → Authentication → URL Configuration** and update:
+> - **Site URL**: `https://exampropaper.vercel.app`
+> - **Redirect URLs**: add `https://exampropaper.vercel.app/**` and
+>   `http://localhost:3000/**`
+> Secrets/environment variables do not change the Auth URL Configuration — it
+> must be updated directly in the dashboard.
+
 ## 3. Frontend hosting (static)
 
 Build output is just static files: `index.html`, `src/*`, `manifest.json`,
