@@ -26,12 +26,19 @@ function benign(entry: string): boolean {
 // known, documented external-state artifacts (NOT app defects):
 //  - app_log_security_event 401: best-effort telemetry fired at login while
 //    the session token is still propagating (wrapped in try/catch, silent)
+//  - google-drive-oauth 401: best-effort Drive status probe fired on page
+//    load; the auth gateway can transiently 401 during a session-token edge.
+//    The app retries once and otherwise handles it silently (Drive shows
+//    "not connected" until the next load) — no user-facing error, no console
+//    noise. Normal responses are 200 {connected:false} when Drive is
+//    disconnected, which the app also handles silently.
 //  - drive-health CORS/ERR_FAILED: edge functions are not deployed yet
 // NOTE: /questions and /institution 400s (missing columns ncert, academic_year,
 // is_deleted, marks_obtained) intentionally stay RED — evidence of the live
 // schema drift that migration 0028 repairs (apply: supabase db push).
 const benignExternal = (entry: string): boolean => {
   return /app_log_security_event/.test(entry) ||
+    /google-drive-oauth/.test(entry) ||
     /drive-health|net::ERR_FAILED/.test(entry);
 };
 

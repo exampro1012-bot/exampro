@@ -1231,7 +1231,41 @@
     try {
       const sb = EP.getClient();
       if (!sb) return false;
-      const { data, error } = await sb.functions.invoke("google-drive-oauth", { body: { action: "status" } });
+      // Status source of truth: drive-health (repo-owned, returns the full
+      // connection contract: connected, account, stats, rootFolder). Only
+      // super/platform admins reach this code path, and drive-health is
+      // admin-gated, so it applies to exactly this audience.
+      let data, error;
+      try {
+        const health = await sb.functions.invoke("drive-health");
+        if (!health.error && health.data && typeof health.data.connected === "boolean") {
+          googleDriveStatus = {
+            connected: !!health.data.connected,
+            initializing: false,
+            available: true,
+            error: health.data.connected ? null : (health.data.lastError || 'Google Drive not connected'),
+            account: health.data.account,
+            stats: health.data.stats,
+            rootFolder: health.data.rootFolder,
+            lastVerifiedAt: health.data.checkedAt || new Date().toISOString(),
+          };
+          return googleDriveStatus.connected;
+        }
+      } catch (_) { /* fall through to the OAuth status fallback */ }
+      // Fallback: best-effort OAuth status probe; the auth gateway can
+      // transiently 401 during a session-token edge. Retry once after a short
+      // pause so the shown Drive status self-heals instead of sticking at
+      // "not connected".
+      const invokeStatus = () => sb.functions.invoke("google-drive-oauth", { body: { action: "status" } });
+      let attempt = 0;
+      let probe;
+      while (attempt < 2) {
+        attempt++;
+        probe = await invokeStatus();
+        if (!probe.error && probe.data) break;
+        if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 2000));
+      }
+      ({ data, error } = probe);
       if (error || !data) throw new Error(data?.error || error?.message || "Drive status check failed");
       googleDriveStatus = {
         connected: !!data.connected,

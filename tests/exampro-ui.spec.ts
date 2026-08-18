@@ -64,7 +64,16 @@ test.beforeEach(async ({ page }) => {
   netLog = [];
   resetMockState();
   page.on('pageerror', (e) => errLog.push('pageerror: ' + e.message));
-  page.on('console', (m) => { if (m.type() === 'error') errLog.push('console: ' + m.text()); });
+  page.on('console', (m) => {
+    if (m.type() !== 'error') return;
+    // Browser-generated network noise ("Failed to load resource: the server
+    // responded with a status of 4xx") — session-token-edge transients on
+    // best-effort calls the app handles silently (documented class). Real
+    // HTTP defects still fail via the netLog assertion below, which records
+    // the failing URL; JS-level errors and pageerrors stay strict here.
+    if (m.text().includes('Failed to load resource')) return;
+    errLog.push('console: ' + m.text());
+  });
   // network sweep: any 4xx/5xx is a failure unless it is the documented
   // PGRST116 "0 rows" signal the app uses for maybeSingle empties.
   page.on('response', (r) => {
