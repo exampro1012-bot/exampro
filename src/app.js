@@ -751,7 +751,12 @@
       const pwErr = EP.auth.validatePassword(password);
       if (pwErr) throw new Error(pwErr);
       const { data, error } = await sb.auth.signUp({
-        email, password, options: { data: { full_name: fullName } },
+        email,
+        password,
+        options: {
+          data: { full_name: fullName },
+          emailRedirectTo: window.location.origin + "/#/auth/callback",
+        },
       });
       if (error) throw error;
       return data;
@@ -821,7 +826,11 @@
     },
     async resendVerification(email) {
       const sb = EP.getClient();
-      const { error } = await sb.auth.resend({ email, type: "signup" });
+      const { error } = await sb.auth.resend({
+        email,
+        type: "signup",
+        redirectTo: window.location.origin + "/#/auth/callback",
+      });
       if (error) throw error;
     },
   };
@@ -1140,11 +1149,13 @@
         if (u.searchParams.has("error") || u.searchParams.has("error_code") || u.searchParams.has("error_description")) {
           u.search = "";
           history.replaceState({}, "", u.toString());
+          if (!window.location.hash) window.location.hash = "/auth";
         }
       } catch (_) {}
       do {
         EP._rerender = false;
         const path = EP.currentPath();
+        if (!window.location.hash) { EP.navigate(path); continue; }
         const sb = EP.getClient();
         if (!sb) { EP.renderSetup(); continue; }
         if (path === "/unauthorized") { EP.renderUnauthorized(); continue; }

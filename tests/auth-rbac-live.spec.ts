@@ -78,7 +78,7 @@ test('OAuth failure callback (error params) surfaces a clear toast, cleans the U
   await page.goto(bad);
   await expect(page.locator('.toast-error')).toBeVisible({ timeout: 15000 });
   await expect(page.locator('.toast-error')).toContainText(/Sign-in failed|exchange external code/i);
-  await expect(page).toHaveURL(/^https?:\/\/[^/]+\/?$/); // query params stripped
+  await expect(page).toHaveURL(/#\/auth$/); // error params stripped, login page shown
   await expect(page.locator('#auth')).toBeVisible({ timeout: 15000 });
 });
 
