@@ -66,7 +66,7 @@ async function patch() {
 async function verifyPublic() {
   // Public probe — proves the running project now serves the real client id.
   const res = await fetch(`https://${REF}.supabase.co/auth/v1/settings`, {
-    headers: { apikey: 'sb_publishable_FAmNvES13SDqePezNexyzA_JUapzzCJ' },
+    headers: { apikey: process.env.EXAMPRO_PUBLISHABLE_KEY || '' },
   });
   if (!res.ok) { console.error(`settings probe ${res.status}`); return; }
   const j = await res.json();

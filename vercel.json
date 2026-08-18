@@ -1,7 +1,10 @@
 {
   "version": 2,
   "installCommand": "npm install",
-  "buildCommand": "node scripts/build.mjs --key=sb_publishable_FAmNvES13SDqePezNexyzA_JUapzzCJ",
+  "buildCommand": "node scripts/build.mjs",
+  "env": {
+    "EXAMPRO_PUBLISHABLE_KEY": "@exampro_publishable_key"
+  },
   "outputDirectory": "dist",
   "rewrites": [
     {

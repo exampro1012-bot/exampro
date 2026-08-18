@@ -26,12 +26,24 @@ Deno.serve(async (req) => {
 
     const { data: prof } = await svc.from("profiles").select("default_tenant_id").eq("auth_user_id", userId).maybeSingle();
     const tenantId = prof?.default_tenant_id || "00000000-0000-0000-0000-000000000001";
-    const { data: oauthTok } = await svc
+    let { data: oauthTok } = await svc
       .from("google_drive_oauth_tokens")
       .select("account")
       .eq("tenant_id", tenantId)
       .eq("provider", "GOOGLE_DRIVE")
       .maybeSingle();
+    // Platform admins act under the global tenant while the stored token may
+    // live under a specific tenant (or none) — match getDriveClient's fallback
+    // so the reported account stays accurate.
+    if (!oauthTok?.account) {
+      ({ data: oauthTok } = await svc
+        .from("google_drive_oauth_tokens")
+        .select("account")
+        .eq("provider", "GOOGLE_DRIVE")
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle());
+    }
 
     const { data: folders } = await svc.from("storage_folders").select("*").eq("provider", "GOOGLE_DRIVE");
     const { data: objects } = await svc.from("storage_objects").select("id, mime_type, size_bytes, created_at, is_deleted").eq("provider", "GOOGLE_DRIVE");
