@@ -1126,6 +1126,22 @@
     if (EP._rendering) { EP._rerender = true; return; }
     EP._rendering = true;
     try {
+      // OAuth failure callbacks land on the app origin with query params
+      // (?error=...&error_description=...&sb=...). Surface a clear toast,
+      // record the event, and strip the params so a retry starts clean.
+      try {
+        const u = new URL(window.location.href);
+        const desc = u.searchParams.get("error_description") || u.searchParams.get("error");
+        if (desc && !EP.state.oauthError) {
+          EP.state.oauthError = desc;
+          EP.toast("Sign-in failed: " + desc.slice(0, 200), "error");
+          EP.secLog("OAUTH_ERROR", JSON.stringify({ message: desc.slice(0, 200) }));
+        }
+        if (u.searchParams.has("error") || u.searchParams.has("error_code") || u.searchParams.has("error_description")) {
+          u.search = "";
+          history.replaceState({}, "", u.toString());
+        }
+      } catch (_) {}
       do {
         EP._rerender = false;
         const path = EP.currentPath();

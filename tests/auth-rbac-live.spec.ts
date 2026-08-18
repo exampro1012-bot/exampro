@@ -71,6 +71,17 @@ test('boots to login with baked-in production config (no setup screen)', async (
   expect(errors).toEqual([]);
 });
 
+test('OAuth failure callback (error params) surfaces a clear toast, cleans the URL, and shows login', async ({ page }) => {
+  const bad =
+    '/?error=server_error&error_code=unexpected_failure' +
+    '&error_description=Unable%20to%20exchange%20external%20code%3A%204%2F0A&sb=';
+  await page.goto(bad);
+  await expect(page.locator('.toast-error')).toBeVisible({ timeout: 15000 });
+  await expect(page.locator('.toast-error')).toContainText(/Sign-in failed|exchange external code/i);
+  await expect(page).toHaveURL(/^https?:\/\/[^/]+\/?$/); // query params stripped
+  await expect(page.locator('#auth')).toBeVisible({ timeout: 15000 });
+});
+
 for (const [role, cfg] of Object.entries(ROLES)) {
   test(`[${role}] login -> landing ${cfg.landing}; reload keeps session; logout returns to login`, async ({ page }) => {
     test.setTimeout(60_000);
