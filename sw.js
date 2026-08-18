@@ -1,5 +1,5 @@
 /* ExamPro service worker — offline app-shell cache. */
-const CACHE = "exampro-v3";
+const CACHE = "exampro-v4";
 const ASSETS = [
   "./",
   "./index.html",
