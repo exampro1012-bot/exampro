@@ -19,7 +19,7 @@ ExamPro is a static frontend + Supabase backend. No application server to run.
 
 - Enable Email auth; optionally Google (see `docs/oauth.md`).
 - Set **Site URL** and **Redirect URLs** to your production origin
-  (and `http://localhost:3000/**` for local dev).
+  (`https://exampropaper.vercel.app/**`) and `http://localhost:3000/**` for local dev.
 
 ## 3. Frontend hosting (static)
 

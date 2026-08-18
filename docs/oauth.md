@@ -45,8 +45,8 @@ If you serve the app from a non-`localhost` origin and want Google to work
 there too, add that origin's callback handling via Supabase's
 **Site URL / Redirect URLs** (Authentication → URL Configuration):
 
-- Site URL: `http://localhost:3000` (or your deployed origin)
-- Redirect URLs: add `http://localhost:3000/**` and your production URL.
+- Site URL: `https://exampropaper.vercel.app` (or your deployed origin)
+- Redirect URLs: add `http://localhost:3000/**` and `https://exampropaper.vercel.app/**`.
 
 ## Troubleshooting
 

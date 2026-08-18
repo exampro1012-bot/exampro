@@ -1,6 +1,5 @@
-// Production-mode E2E config: runs the full suite against the PRODUCTION
-// BUILD (dist/ — publishable key baked, no localhost refs, no source files)
-// served on port 3100, instead of the repo root on 3000.
+// Production-mode E2E config: runs the full suite against the LIVE
+// production site https://exampropaper.vercel.app/.
 // Usage: PLAYWRIGHT_JSON_OUTPUT_NAME=test-results/prod-results.json npx playwright test --config=playwright.prod.config.ts
 import { defineConfig, devices } from '@playwright/test';
 
@@ -17,7 +16,7 @@ export default defineConfig({
     ['json', { outputFile: 'test-results/prod-results.json' }],
   ],
   use: {
-    baseURL: 'http://localhost:3100',
+    baseURL: 'https://exampropaper.vercel.app',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
@@ -39,9 +38,5 @@ export default defineConfig({
       },
     },
   ],
-  webServer: {
-    command: 'node scripts/serve-e2e.mjs 3100 dist',
-    url: 'http://localhost:3100',
-    reuseExistingServer: true,
-  },
+  webServer: null,
 });
