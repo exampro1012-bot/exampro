@@ -1,0 +1,16 @@
+{
+  "name": "ExamPro",
+  "short_name": "ExamPro",
+  "description": "Free-first, Supabase-powered JEE/NEET/CET exam preparation platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f7fa",
+  "theme_color": "#1f3a5f",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
