@@ -232,7 +232,8 @@
       const btn = EP.qs("#au_login_btn");
       btn.disabled = true; btn.textContent = "Signing in…";
       try {
-        await EP.auth.signIn(email, pw);
+        const d = await EP.auth.signIn(email, pw);
+        await EP.loadIdentity(d.session.user);
         EP.secLog("LOGIN_SUCCESS", JSON.stringify({ email: email }));
         EP.toast("Welcome back", "success");
         EP.navigate(EP.roleDashboard());
