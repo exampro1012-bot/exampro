@@ -20,9 +20,9 @@ The authentication system is **architecturally sound and safe**:
 - `SUPER_ADMIN` is granted exclusively via the `platform_admins` table (migration 0045 bootstraps `exampro1012@gmail.com`) or the audited, admin-gated `app_admin_set_user_role()` RPC (0047).
 - All 10 required roles exist in the seed/migrations with permission sets: SUPER_ADMIN, INSTITUTION_ADMIN, TEACHER, SUBJECT_TEACHER, QUESTION_REVIEWER, CONTENT_EDITOR, STUDENT, PARENT, FINANCE, SUPPORT.
 
-**Work performed this session:** centralized post-auth redirect resolver (`EP.roleDashboard`), route-meta defense-in-depth for 11 self-guarded `/admin/*` routes, corrected an outdated security claim in `docs/rbac.md`, wired `npm run build`, and added a 22-test live RBAC E2E suite. All verification that can run in this environment **passes**.
+**Work performed this session:** centralized post-auth redirect resolver (`EP.roleDashboard`), route-meta defense-in-depth for 11 self-guarded `/admin/*` routes, corrected an outdated security claim in `docs/rbac.md`, wired `npm run build`, added a 23-test live RBAC E2E suite, provisioned + rotated all 10 role accounts (`--rotate`, `.env.local` written), fixed a login-landing race (identity now loads before the role-based redirect), and hardened OAuth-failure handling (clear toast + URL cleanup + landing on the login page). All verification that can run in this environment **passes**.
 
-**Top owner actions required before signing off production:** (1) set the real Google OAuth client in Supabase Auth → Providers → Google (currently `placeholder`); (2) run `scripts/seed-test-users.mjs` with a platform-admin or service-role credential to provision the 10 role accounts, then run the new RBAC suite; (3) confirm Supabase Auth → URL Configuration (Site URL + redirects) points at `https://exampropaper.vercel.app/`.
+**Top owner actions required before signing off production:** (1) set the correct Google OAuth client secret (current stored value is rejected by Google — see row 16); (2) confirm the Vercel deployment of the three pending commits (`4d11c5c`, `a0336b7`, `4881440`) and re-run the RBAC matrix against production; (3) confirm Supabase Auth → URL Configuration (Site URL + redirects) points at `https://exampropaper.vercel.app/`.
 
 ---
 
@@ -45,16 +45,16 @@ The authentication system is **architecturally sound and safe**:
 | 13 | Password policy enforced | ✅ PASS | Client (`EP.auth.validatePassword`) and server (`app_validate_password`, migration 0025) |
 | 14 | Session persistence across reload | ✅ PASS | `auth-live.spec.ts:78` (existing) + NEW `auth-rbac-live.spec.ts` per-role reload test |
 | 15 | No session leak across tabs / after logout | ✅ PASS | `auth-live.spec.ts:78` (existing); `SIGNED_OUT` handler resets `EP.state` (`app.js:1442`) |
-| 16 | Google OAuth flow | ✅ PASS / ⚠ OWNER | Flow correctly initiates to `accounts.google.com` (`auth-live.spec.ts:111`). **Supabase `external_google_client_id` is still `placeholder`** — Google rejects the OAuth request. Owner must paste the real client id/secret |
+| 16 | Google OAuth flow | ⚠ PARTIAL (initiation ✅ / exchange ⛔ BLOCKED-OWNER) | `tests/auth-live.spec.ts` against production: **12/12 PASSED** (desktop + mobile); Google flow reaches the consent domain **without an authError**. **One full exchange WAS verified** (owner's own login produced a real `access_token` session, 2026-08-18). Current status: the secret stored in Supabase is **rejected by Google** (`invalid_client — the provided client secret is invalid`); valid Google client secrets start with `GOCSPX-` and the stored value does not — the owner must re-paste the current secret (Google hides secrets after rotation; use "Add new client secret" → copy the `GOCSPX-...` value) |
 | 17 | Password reset flow | ✅ PASS | `EP.auth.reset` → `origin + "/#/auth/reset"` (`app.js:811`); reset screen + update password at `shell.js:150` |
 | 18 | Wrong-password rejection | ✅ PASS | `auth-live.spec.ts:58` + NEW `[SUPER_ADMIN] wrong password` test |
 | 19 | Unauthorized page for denied roles | ✅ PASS | `EP.accessDenied` (`guard.js:109`) |
 | 20 | Audit logging of auth events | ✅ PASS | `EP.secLog` → `app_log_security_event` (`app.js:885`); `LOGIN_SUCCESS`, `LOGIN_FAILED`, `SIGNUP`, `PASSWORD_CHANGED` |
 | 21 | No secrets in `index.html`/bundle | ✅ PASS | Only the **publishable anon key** + project URL are baked (safe by design); `scripts/build.mjs` rejects `service_role`, DB URLs, stray JWTs |
 | 22 | `.env.local`/`.env.*.local` gitignored | ✅ PASS | `.gitignore` lines 6–8 |
-| 23 | Test account seeder | ✅ PASS (script) / ⛔ BLOCKED-OWNER | `scripts/seed-test-users.mjs` exists, idempotent, writes creds once to `.env.local`. Requires `SUPABASE_SERVICE_ROLE_KEY` or platform-admin `ADMIN_EMAIL/ADMIN_PASSWORD` — **not available in this environment** |
+| 23 | Test account seeder | ✅ PASS (executed) | `scripts/seed-test-users.mjs` exists, idempotent; `--rotate` mode (service-role only) resets all 10 `@exampro.local` accounts and rewrites `.env.local` — **executed 2026-08-18** via the service-role key: all 10 accounts ROTATED, fresh passwords written to `.env.local` (gitignored; printed only at run time) |
 | 24 | E2E env bootstrap | ✅ PASS | `scripts/e2e-bootstrap.mjs` fails hard when `SUPABASE_URL`/`SUPABASE_ANON_KEY` missing |
-| 25 | Per-role E2E matrix | ✅ PASS (suite written) / ⛔ BLOCKED-OWNER | NEW `tests/auth-rbac-live.spec.ts` (22 tests): 10-role login→landing matrix, direct-URL `/admin` denial for 8 non-admin roles, SUPER_ADMIN `/admin` reachable, `/admin/ingestion` denial, wrong-password, session persistence, `/auth` bounce. All role cases skip until `.env.local` creds exist |
+| 25 | Per-role E2E matrix | ✅ PASS (localhost, 46/46) / ⛔ BLOCKED-OWNER (production re-run) | NEW `tests/auth-rbac-live.spec.ts` (23 tests): 10-role login→landing matrix, direct-URL `/admin` denial for 8 non-admin roles, SUPER_ADMIN `/admin` reachable, `/admin/ingestion` denial, wrong-password, session persistence, `/auth` bounce, OAuth-failure callback handling. **46/46 PASSED** (desktop + mobile, localhost serving current source against the real Supabase project). Production re-run waits on the pending Vercel deploy |
 | 26 | Mobile viewport E2E | ✅ PASS | Playwright `chromium-mobile` project (390×844); logout via `#logout_btn2` |
 | 27 | CI-friendly zero-skip enforcement | ✅ PASS | `scripts/enforce-zero-skip.mjs` + `e2e:enforce` script |
 | 28 | Boot without setup screen in production | ✅ PASS | Verified live: NEW boot test — `#auth` visible, `#setup` absent, zero console errors, against production Supabase |
@@ -91,6 +91,9 @@ The authentication system is **architecturally sound and safe**:
 | `tests/auth-rbac-live.spec.ts` | NEW — 22-test live RBAC suite (10-role matrix, negative access, persistence, wrong password) | Phase 25 — per-role production E2E coverage |
 | `docs/architecture.md` | Removed same stale "first-user SUPER_ADMIN from metadata" claim as rbac.md; documented STUDENT default + 0045/0047 grants | Docs must match reality |
 | `scripts/seed-test-users.mjs` | NEW `--rotate` mode (service-role only): resets passwords of existing `@exampro.local` test accounts and rewrites `.env.local` | Unblocks E2E when original `.env.local` was lost (accounts already exist, incl. `superadmin@exampro.local`) |
+| `src/shell.js` | Login handler now `await`s `EP.loadIdentity(...)` **before** `EP.navigate(EP.roleDashboard())` | Race fix: role-based landing was evaluated before identity loaded → role-aware roles (e.g. INSTITUTION_ADMIN → `/institution`) landed on the generic `/dashboard` |
+| `src/app.js` | (a) OAuth-failure callbacks (`?error=...&error_description=...&sb=...`) surface a clear toast, record `OAUTH_ERROR`, strip the params, and land on `/#/auth`; (b) bare-hash boots normalize to the resolved route (`/#` → `/#/dashboard`) | Users were left staring at a dead URL after a failed exchange; successful Google logins left the address bar on a bare `/#` while the app was already on the dashboard |
+| `tests/auth-rbac-live.spec.ts` | NEW test: OAuth-failure callback URL shows the error toast, cleans the URL, and renders login | Locks in the new failure UX |
 
 `index.html` was **reverted** to its original baked-in production config (project URL + anon key). A `process.env` variant was briefly introduced and removed — the app is a static PWA with no build-time injection for HTML; the anon key is publishable-by-design and its presence was already verified by the live boot test.
 
@@ -107,58 +110,51 @@ node scripts/build.mjs --key=<anon>   → dist/ built: 16 files, 0 issues
 
 node tests/structural.mjs             → STRUCTURAL TESTS PASSED ✓ (secret scan + boot)
 
-npx playwright test tests/auth-rbac-live.spec.ts -g "boots to login"
-                                      → ✓ passed on chromium-desktop AND
-                                        chromium-mobile (app boots to login with
-                                        baked-in config against the production
-                                        Supabase project; no page/console errors)
+npx playwright test tests/auth-rbac-live.spec.ts   → 46/46 PASSED (desktop +
+              mobile, localhost + real Supabase project): 10-role login→landing
+              matrix, direct-URL denials, persistence, wrong password, /auth
+              bounce, OAuth-failure callback handling
 
-npx playwright test tests/auth-rbac-live.spec.ts
-                                      → 1 passed, 21 skipped (role cases skip until
-                                        .env.local role credentials exist)
+npx playwright test tests/auth-live.spec.ts --config=playwright.prod.config.ts
+              → 12/12 PASSED against https://exampropaper.vercel.app (desktop +
+              mobile): boot, signup→dashboard, wrong-password, persistence,
+              logout isolation, Google OAuth initiation (consent domain reached,
+              no authError)
 
-npx playwright test tests/exampro-ui.spec.ts       → 41/41 PASSED (regression,
-                                      desktop; auth + settings + negative UX)
+npx playwright test tests/exampro-ui.spec.ts tests/exampro-negative.spec.ts
+              --config=playwright.prod.config.ts → 124/124 PASSED against
+              production (desktop + mobile)
 
-npx playwright test tests/exampro-negative.spec.ts → 21/21 PASSED (regression:
-                                      quota gates, tenant-isolation direct URL,
-                                      stale-session role downgrade)
+OAuth callback reproduction (localhost): pasted real token URL → tokens
+              consumed, localStorage session saved, URL cleaned, app rendered
+              the shell, 0 JS errors; hash normalized to #/dashboard
 ```
 
 ---
 
 ## 5. Owner actions required (BLOCKED in this environment)
 
-1. **Supabase Auth → Providers → Google**: replace `placeholder` client id/secret with the real Google Cloud OAuth client (`577032144870-...`), authorize the redirect `https://<project-ref>.supabase.co/auth/v1/callback`, then re-run `auth-live.spec.ts` "Google provider" test and confirm the consent screen renders (no `authError`).
-2. **Supabase Auth → URL Configuration**: confirm Site URL = `https://exampropaper.vercel.app/` and add the same URL to the redirect allowlist (code already uses `window.location.origin`, so this must include the Vercel domain).
-3. **Provision role accounts + run the RBAC suite** (accounts from a prior session already exist, incl. `superadmin@exampro.local`; their passwords were lost with `.env.local`):
+1. **Supabase Auth → Providers → Google — set the current client secret.** The flow is configured correctly (client id `577032144870-...nqb0`, both callback URIs authorized, flow reaches Google's consent screen) and one full exchange was verified. But the secret currently stored in Supabase is **rejected by Google** (`invalid_client — the provided client secret is invalid`, verified against `https://oauth2.googleapis.com/token` on 2026-08-18). Valid Google client secrets start with **`GOCSPX-`**; the stored value does not. Because Google hides secrets after rotation, the owner must: Google Cloud Console → Credentials → open the client → **Add new client secret** → copy the generated `GOCSPX-...` value → paste into Supabase Auth → Providers → Google → **Client secret** → Save.
+2. **Vercel — confirm deployment of pending commits.** Three commits are on `origin/main` (`4d11c5c` login race fix, `a0336b7` OAuth-failure handling, `4881440` hash normalization) but `https://exampropaper.vercel.app/src/shell.js` still serves the pre-fix code. Check the Deployments tab for the build status (a pnpm-lockfile install error previously blocked builds; `vercel.json` now pins `installCommand: npm install`). After it lands, re-run the RBAC matrix against production:
    ```
-   # with a platform admin or service-role credential available locally ONLY:
-   SUPABASE_URL=... SUPABASE_ANON_KEY=... \
-   ADMIN_EMAIL=exampro1012@gmail.com ADMIN_PASSWORD=<env> \
-   node scripts/seed-test-users.mjs                # creates missing accounts
-   # accounts that already exist keep their (unknown) passwords; to reset them
-   # for E2E, use the service-role path (writes fresh passwords to .env.local):
-   SUPABASE_URL=... SUPABASE_ANON_KEY=... \
-   SUPABASE_SERVICE_ROLE_KEY=<env> \
-   node scripts/seed-test-users.mjs --rotate
-   npx playwright test tests/auth-rbac-live.spec.ts
-   npx playwright test tests/auth-live.spec.ts
+   npx playwright test tests/auth-rbac-live.spec.ts --config=playwright.prod.config.ts
    ```
-4. **Vercel**: redeploy from the current commit; verify `exampropaper.vercel.app/#/` shows the login screen (no setup screen) and `/#/auth/reset`, `/#/verify-email`, `/#/forgot-password` routes work; confirm `dist/` from `npm run build` is the deployed artifact.
-5. **Email templates**: confirm confirmation + password-reset templates point to the Vercel site (link text is `{site_url}/#/auth/reset` style) and that a fresh signup receives the confirmation email (Supabase SMTP must be configured; the project may still be on the sandbox provider, which throttles unknown domains).
+3. **Supabase Auth → URL Configuration**: confirm Site URL = `https://exampropaper.vercel.app/` and add the same URL to the redirect allowlist (code already uses `window.location.origin`, so this must include the Vercel domain).
+4. **Email templates**: confirm confirmation + password-reset templates point to the Vercel site (link text is `{site_url}/#/auth/reset` style) and that a fresh signup receives the confirmation email (Supabase SMTP must be configured; the project may still be on the sandbox provider, which throttles unknown domains).
+5. **Rotate shared secrets**: the Supabase Management API access token and the legacy service-role key were shared in plain chat during this work — revoke/rotate both when convenient.
+6. **Install a smoke test of the cert content**: `npx playwright test tests/auth-rbac-live.spec.ts --config=playwright.prod.config.ts` → expect 46/46 (23 tests × 2 viewports).
 
 ---
 
 ## 6. Residual risks (tracked, not silent)
 
-- **Google OAuth login for production users is currently broken end-to-end** (client id `placeholder`) — email/password login is unaffected. Fix = owner action 1.
-- **Signup emails to real domains** depend on Supabase's email provider configuration; if the project uses the sandbox SMTP, unknown-domain emails may bounce. Fix = Supabase SMTP settings (owner).
-- **Role-account E2E has not executed against live data** — the suite is written, wired, and its skip logic verified, but credentials were not available in this environment.
+- **Google OAuth secret state is uncertain.** One full exchange was verified live (real `access_token` issued), but the secret now stored in Supabase is rejected by Google (`invalid_client`). Until the owner re-pastes a valid `GOCSPX-...` secret and a second exchange is verified, production Google login is not certified end-to-end.
+- **Production still runs pre-fix code.** Three fixes (login race, OAuth-failure UX, hash normalization) are pushed but not yet deployed by Vercel. The RBAC matrix passed 46/46 on localhost (current source + real Supabase); the production re-run is pending the deploy.
+- **Interactive Google consent** can only be exercised by a human owner in a browser; automation covers everything up to and including the consent-screen redirect.
 - The `solutions/queue|review` routes grant `REVIEWER`/`DATA_OPERATOR` (legacy codes). `QUESTION_REVIEWER` is deliberately **not** included there — it mirrors `REVIEWER`'s permission set but stays out of the AI-solution pipeline. If production wants QUESTION_REVIEWER in that queue, it's a one-line change in `src/ai-solutions.js` `ROLES` (owner decision).
 
 ---
 
 ## 7. Verdict
 
-**Production-ready with respect to everything verifiable from code in this environment.** The auth core (session → profile → membership → role → permissions → redirect) is DB-driven, RLS-backed, secret-free, and covered by a growing live E2E suite. The remaining items are **owner-side configuration** (Google OAuth client, Supabase URL config, SMTP, role-account provisioning, Vercel redeploy), not code defects. Certification is conditional on completing owner actions 1–4 and re-running the suites in section 5.
+**Production-ready with respect to everything verifiable from code in this environment.** The auth core (session → profile → membership → role → permissions → redirect) is DB-driven, RLS-backed, secret-free, and covered by a growing live E2E suite — including a **verified real Google OAuth exchange**, a **46/46 per-role RBAC matrix** (localhost + real Supabase), and **124/124 + 12/12 production regression suites**. The remaining items are **owner-side actions, not code defects**: re-paste the current Google client secret (stored value is rejected), confirm the Vercel deploy of the three pending commits and re-run the RBAC matrix against production, and the Supabase SMTP check. Certification is conditional on those items and the smoke test in section 5.
