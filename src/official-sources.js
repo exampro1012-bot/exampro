@@ -17,6 +17,12 @@ function allowed() { return EP.hasRole(["SUPER_ADMIN", "PLATFORM_ADMIN"]); }
 function deny(main) {
   main.innerHTML = '<div class="page"><div class="empty error">Super Admin access required.</div></div>';
 }
+
+// Route metadata so the shell guard (EP.canAccess) rejects non-admins up front;
+// defense-in-depth alongside the handler-level allowed()/deny() checks below.
+["/admin/sources", "/admin/sources/discovery"].forEach(function (p) {
+  EP.routeMeta[p] = { roles: ["SUPER_ADMIN", "PLATFORM_ADMIN"] };
+});
 function isMissingTable(e) {
   if (!e) return false;
   const m = (e.message || "").toLowerCase();

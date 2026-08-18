@@ -899,6 +899,39 @@
     return "staff";
   };
 
+  // ---------------------------------------------------------------------------
+  // Centralized role -> landing-route resolver (production redirects).
+  // Every post-auth redirect (login, signup, OAuth callback, password update)
+  // must route through here so landings stay in sync with the role model.
+  // Falls back to an accessible route instead of dropping a user onto an
+  // access-denied page right after a successful login.
+  // ---------------------------------------------------------------------------
+  EP.roleDashboard = function () {
+    const s = EP.state;
+    const role = s.isSuper ? "SUPER_ADMIN" : (s.role || "");
+    const preferred = {
+      "SUPER_ADMIN": "/dashboard",
+      "PLATFORM_ADMIN": "/dashboard",
+      "INSTITUTION_ADMIN": "/institution",
+      "ACADEMIC_ADMIN": "/institution",
+      "TEACHER": "/dashboard",
+      "SUBJECT_TEACHER": "/dashboard",
+      "PAPER_SETTER": "/papers",
+      "REVIEWER": "/questions",
+      "QUESTION_REVIEWER": "/questions",
+      "CONTENT_EDITOR": "/dashboard",
+      "DATA_OPERATOR": "/dashboard",
+      "STUDENT": "/dashboard",
+      "PARENT": "/dashboard",
+      "FINANCE": "/reports",
+      "SALES": "/reports",
+      "SUPPORT": "/dashboard",
+    }[role] || "/dashboard";
+    if (EP.canAccess(preferred)) return preferred;
+    if (EP.canAccess("/dashboard")) return "/dashboard";
+    return "/auth";
+  };
+
   // Unread notification count for the topbar bell (RLS-scoped to the user).
   EP.unreadCount = async function () {
     const sb = EP.getClient();
@@ -1102,13 +1135,13 @@
         let authed = await requireAuth();
         if (!authed) { EP.renderAuth(); continue; }
         if (path === "/auth" || path === "/setup") {
-          EP.navigate("/dashboard"); continue;
+          EP.navigate(EP.roleDashboard()); continue;
         }
         if (path === "/auth/callback") {
           if (authed) {
             const prof = EP.state.profile;
             if (prof && !prof.email_verified_at) EP.navigate("/verify-email");
-            else EP.navigate("/dashboard");
+            else EP.navigate(EP.roleDashboard());
             continue;
           }
           EP.renderAuth(); continue;

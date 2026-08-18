@@ -6,7 +6,7 @@
 // @exampro.local) with strong generated passwords, assigns each the correct
 // DATABASE role, and writes the credentials ONCE to .env.local (gitignored).
 //
-// Usage:        node scripts/seed-test-users.mjs
+// Usage:        node scripts/seed-test-users.mjs [--rotate]
 // Environment:
 //   SUPABASE_URL                (required)
 //   SUPABASE_ANON_KEY           (required)
@@ -14,6 +14,14 @@
 //   ADMIN_EMAIL / ADMIN_PASSWORD (required when no service key — a platform
 //                                admin account; used to call
 //                                app_admin_set_user_role from migration 0047)
+//
+// --rotate: reset the password of EXISTING test accounts (service-role key
+// required) and rewrite .env.local with the fresh passwords. Use when the
+// original .env.local was lost but the accounts already exist in the DB.
+//   - Without --rotate, existing accounts keep their current password and are
+//     reported as EXISTED (the old passwords are not recoverable).
+//   - Rotation is a destructive admin action: run it only on the test domain
+//     (@exampro.local) accounts; production accounts are never touched.
 //
 // Security:
 //   - No plaintext passwords are ever committed: they exist only in the
@@ -36,6 +44,12 @@ const ADMIN_EMAIL = process.env.ADMIN_EMAIL || '';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
 
 const DOMAIN = 'exampro.local';
+const ROTATE = process.argv.includes('--rotate');
+
+if (ROTATE && !SERVICE) {
+  console.error('--rotate requires SUPABASE_SERVICE_ROLE_KEY (password reset is an admin-only operation).');
+  process.exit(1);
+}
 
 // role code -> { email local part, display name }
 const ACCOUNTS = [
@@ -101,7 +115,14 @@ async function upsertAuthUser(email, password, fullName) {
   if (SERVICE) {
     const { data, error } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
     const existing = (data?.users || []).find((u) => (u.email || '').toLowerCase() === email);
-    if (existing) return { existed: true, userId: existing.id };
+    if (existing) {
+      if (ROTATE) {
+        const { error: ue } = await admin.auth.admin.updateUserById(existing.id, { password });
+        if (ue) throw new Error('rotate password: ' + ue.message);
+        return { existed: true, rotated: true, userId: existing.id };
+      }
+      return { existed: true, userId: existing.id };
+    }
     const { data: nu, error: ce } = await admin.auth.admin.createUser({
       email, password, email_confirm: true, user_metadata: { full_name: fullName },
     });
@@ -181,8 +202,10 @@ for (const [roleCode, local, fullName] of ACCOUNTS) {
       }
     }
 
-    if (!u.existed) created[roleCode] = password;
-    results.push([roleCode, email, u.existed ? 'EXISTED (password unchanged)' : 'CREATED', 'role=' + roleCode]);
+    if (!u.existed || u.rotated) created[roleCode] = password;
+    results.push([roleCode, email,
+      u.existed ? (u.rotated ? 'ROTATED (password reset)' : 'EXISTED (password unchanged)') : 'CREATED',
+      'role=' + roleCode]);
   } catch (e) {
     results.push([roleCode, email, 'FAILED', e.message]);
   }
@@ -205,7 +228,7 @@ for (const [role, email, status, info] of results) {
 }
 const fresh = Object.keys(created);
 if (fresh.length) {
-  console.log('\nPasswords for NEW accounts (shown ONCE — also written to .env.local):');
+  console.log('\nPasswords for accounts with NEW/ROTATED passwords (shown ONCE — also written to .env.local):');
   for (const r of fresh) console.log(`  ${r}: ${created[r]}`);
 } else {
   console.log('\nNo new accounts were created (all existed). Passwords were NOT changed.');

@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "python -m http.server 3000",
     "serve": "python -m http.server 3000",
+    "build": "node scripts/build.mjs",
     "supabase:test": "playwright test tests/supabase-migration.spec.ts",
     "test:structural": "playwright test tests/supabase-migration.spec.ts",
     "test:ui": "playwright test tests/exampro-ui.spec.ts",

@@ -49,8 +49,10 @@ Browser (src/*)
   00000000-0000-0000-0000-000000000001`) is readable by everyone but only the
   platform can write.
 - Workspace tenants are **auto-provisioned**: a DB trigger on `auth.users`
-  insert creates a tenant + `tenant_memberships` row (role from
-  `raw_user_meta_data.role` or `SUPER_ADMIN` for the first user).
+  insert creates a tenant + `tenant_memberships` row with the safe default role
+  **`STUDENT`** (migration 0025). Signup metadata is never trusted for
+  authorization; SUPER_ADMIN comes only from an explicit `platform_admins`
+  grant (migrations 0045/0047).
 
 ## Trust boundary
 

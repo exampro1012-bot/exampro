@@ -4172,7 +4172,7 @@
       if (prof && !prof.email_verified_at) {
         EP.navigate("/verify-email");
       } else {
-        EP.navigate("/dashboard");
+        EP.navigate(EP.roleDashboard());
       }
     } else {
       EP.navigate("/auth");

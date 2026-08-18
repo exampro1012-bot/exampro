@@ -19,6 +19,12 @@ function deny(main) {
   main.innerHTML = '<div class="page"><div class="empty error">Not authorized. Super Admin / Reviewer access required.</div></div>';
 }
 
+// Route metadata so the shell guard (EP.canAccess) rejects unauthorized roles up
+// front; defense-in-depth alongside the handler-level allowed()/deny() checks.
+["/admin/solutions/queue", "/admin/solutions/review"].forEach(function (p) {
+  EP.routeMeta[p] = { roles: ROLES };
+});
+
 async function correctAnswer(questionId) {
   const { data } = await sb().from("question_answers").select("correct_option_keys, numerical_answer, answer_text, answer_type").eq("question_id", questionId).maybeSingle();
   if (!data) return "";

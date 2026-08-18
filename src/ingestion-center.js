@@ -15,6 +15,14 @@ function deny(main) {
   main.innerHTML = '<div class="page"><div class="empty error">Not authorized. Super Admin access required.</div></div>';
 }
 
+// Route metadata so the shell guard (EP.canAccess) rejects non-admins up front;
+// defense-in-depth alongside the handler-level allowed()/deny() checks below.
+["/admin/ingestion", "/admin/ingestion/upload", "/admin/ingestion/jobs",
+ "/admin/ingestion/review", "/admin/ingestion/sources", "/admin/official-pyq",
+ "/admin/ingestion/answerkey"].forEach(function (p) {
+  EP.routeMeta[p] = { roles: ROLES };
+});
+
 async function countWhere(extra) {
   let q = sb().from("questions").select("*", { count: "exact", head: true }).eq("is_deleted", false);
   if (extra) q = extra(q);

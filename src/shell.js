@@ -82,7 +82,7 @@
           if (prof && !prof.email_verified_at) {
             EP.navigate("/verify-email");
           } else {
-            EP.navigate("/dashboard");
+            EP.navigate(EP.roleDashboard());
           }
         } else {
           EP.navigate("/auth");
@@ -152,7 +152,7 @@
       EP.qs("#au_reset").addEventListener("click", async function () {
         const pw = EP.qs("#au_pw").value, pw2 = EP.qs("#au_pw2").value;
         if (pw !== pw2) { EP.toast("Passwords do not match", "error"); return; }
-        try { await EP.auth.updatePassword(pw); EP.secLog("PASSWORD_CHANGED", null); EP.toast("Password updated", "success"); EP.navigate("/dashboard"); }
+        try { await EP.auth.updatePassword(pw); EP.secLog("PASSWORD_CHANGED", null); EP.toast("Password updated", "success"); EP.navigate(EP.roleDashboard()); }
         catch (e) { EP.toast(e.message || "Failed", "error"); }
       });
       return;
@@ -235,7 +235,7 @@
         await EP.auth.signIn(email, pw);
         EP.secLog("LOGIN_SUCCESS", JSON.stringify({ email: email }));
         EP.toast("Welcome back", "success");
-        EP.navigate("/dashboard");
+        EP.navigate(EP.roleDashboard());
       } catch (e) {
         EP.secLog("LOGIN_FAILED", JSON.stringify({ email: email, reason: (e.message || "").slice(0, 200) }));
         EP.toast(e.message || "Login failed", "error");
@@ -258,7 +258,7 @@
           EP.secLog("SIGNUP", JSON.stringify({ email: email }));
           EP.toast("Account created", "success");
           await EP.loadIdentity(d.session.user);
-          EP.navigate("/dashboard");
+          EP.navigate(EP.roleDashboard());
         }
         else {
           EP.secLog("SIGNUP_EMAIL_REQUIRED", JSON.stringify({ email: email }));
