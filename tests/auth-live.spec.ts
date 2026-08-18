@@ -125,7 +125,21 @@ test('Google provider is enabled and the OAuth flow redirects to Google', async 
   test.setTimeout(120_000);
   await page.goto('/');
   await expect(page.locator('#auth')).toBeVisible({ timeout: 15000 });
+  const authorizeReq = page.waitForRequest((r) => /\/auth\/v1\/authorize\?/.test(r.url()), { timeout: 90_000 });
   await page.click('#au_google');
+  const authorize = await authorizeReq;
+  // Phase 9/24 — OAuth network audit. The authorize URL is the single hop the
+  // frontend controls; its redirect_to MUST be the serving origin and MUST NOT
+  // be localhost when the app runs in production.
+  const au = new URL(authorize.url());
+  const redirectTo = au.searchParams.get('redirect_to') || '';
+  const servingOrigin = new URL(page.url()).origin;
+  const isLocalRun = /localhost|127\.0\.0\.1/.test(servingOrigin);
+  if (!isLocalRun) {
+    const localhostLeak = /localhost|127\.0\.0\.1/.test(au.href) || /localhost|127\.0\.0\.1/.test(redirectTo);
+    expect(localhostLeak, 'production OAuth URL must not reference localhost').toBe(false);
+  }
+  expect(redirectTo, 'OAuth redirect_to must be the serving origin').toBe(servingOrigin);
   await expect(page).toHaveURL(/accounts\.google\.com/, { timeout: 90_000 });
   const finalUrl = page.url();
   // Defensive parsing: never assume the URL global or the final URL shape in

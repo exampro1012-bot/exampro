@@ -33,6 +33,13 @@
   EP.saveConfig = function (c) {
     localStorage.setItem(LS_KEY, JSON.stringify(c));
   };
+  // Single source of truth for the app's own origin. Every OAuth/password-reset
+  // redirect target is derived from here. The browser's ACTUAL serving origin
+  // always wins (production -> the Vercel domain, dev -> the local dev port);
+  // no hardcoded fallback can ever leak a dev-only origin into production OAuth.
+  EP.appOrigin = function () {
+    return window.location.origin;
+  };
   EP.getClient = function () {
     const c = EP.loadConfig();
     if (!c.url || !c.anonKey) return null;
@@ -769,9 +776,9 @@
     },
     async signInWithGoogle() {
       const sb = EP.getClient();
-      const allowed = [window.location.origin];
+      const allowed = [EP.appOrigin()];
       const cfg = EP.loadConfig();
-      if (cfg.url && cfg.url !== window.location.origin) allowed.push(cfg.url);
+      if (cfg.url && cfg.url !== EP.appOrigin()) allowed.push(cfg.url);
       const { error } = await sb.auth.signInWithOAuth({
         provider: "google",
         options: {
@@ -813,7 +820,7 @@
     async reset(email) {
       const sb = EP.getClient();
       const { error } = await sb.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin + "/#/auth/reset",
+        redirectTo: EP.appOrigin() + "/#/auth/reset",
       });
       if (error) throw error;
     },
@@ -829,7 +836,7 @@
       const { error } = await sb.auth.resend({
         email,
         type: "signup",
-        redirectTo: window.location.origin + "/#/auth/callback",
+        redirectTo: EP.appOrigin() + "/#/auth/callback",
       });
       if (error) throw error;
     },
